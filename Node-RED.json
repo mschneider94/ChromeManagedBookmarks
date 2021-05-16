@@ -1,0 +1,279 @@
+[
+    {
+        "id": "e8850de7.ba355",
+        "type": "tab",
+        "label": "Chrome Managed Bookmarks",
+        "disabled": false,
+        "info": ""
+    },
+    {
+        "id": "a8969ad5.486e08",
+        "type": "http in",
+        "z": "e8850de7.ba355",
+        "name": "",
+        "url": "/bookmarks",
+        "method": "post",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 130,
+        "y": 40,
+        "wires": [
+            [
+                "e551bfdc.a7be8"
+            ]
+        ]
+    },
+    {
+        "id": "5b6a46a6.9a4c58",
+        "type": "http response",
+        "z": "e8850de7.ba355",
+        "name": "",
+        "statusCode": "",
+        "headers": {},
+        "x": 970,
+        "y": 40,
+        "wires": []
+    },
+    {
+        "id": "e551bfdc.a7be8",
+        "type": "function",
+        "z": "e8850de7.ba355",
+        "name": "extract changes",
+        "func": "let regex_gitea_address = /https?:\\/\\/([a-z0-9](?:[a-z0-9\\.\\-]*[a-z0-9])?)\\/.*/i;\nlet gitea_address = msg.payload.repository.html_url.match(regex_gitea_address);\n\n// abort, if failed to obtain gitea_url\nif (typeof gitea_address === null || gitea_address.length !== 2) {\n    msg.payload = null;\n} else {\n    let changes = [];\n    \n    let fnPushChanges = function(commit, change, action) {\n        changes.push({\n            'gitea_address': gitea_address[1],\n            'repo_owner': msg.payload.repository.owner.username,\n            'repo_name': msg.payload.repository.name,\n            'commit': commit.id,\n            'action': action,\n            'file': change\n        });\n    };\n    \n    if (msg.payload.commits) {\n        msg.payload.commits.forEach(commit => {\n           if (commit.added) {\n               commit.added.forEach(change => {\n                   fnPushChanges(commit, change, 'added');\n               });\n           }\n           if (commit.modified) {\n               commit.modified.forEach(change => {\n                   fnPushChanges(commit, change, 'modified');\n               });\n           }\n           if (commit.removed) {\n               commit.removed.forEach(change => {\n                   fnPushChanges(commit, change, 'removed');\n               });\n           }\n        });\n    }\n    \n    msg.payload = changes;\n}\n\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 360,
+        "y": 40,
+        "wires": [
+            [
+                "f3301d42.cda41"
+            ]
+        ]
+    },
+    {
+        "id": "f3301d42.cda41",
+        "type": "switch",
+        "z": "e8850de7.ba355",
+        "name": "changes?",
+        "property": "payload",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "empty"
+            },
+            {
+                "t": "else"
+            }
+        ],
+        "checkall": "false",
+        "repair": false,
+        "outputs": 2,
+        "x": 560,
+        "y": 40,
+        "wires": [
+            [
+                "fd6004a5.dc17d8"
+            ],
+            [
+                "49e4041f.f7132c"
+            ]
+        ]
+    },
+    {
+        "id": "49e4041f.f7132c",
+        "type": "split",
+        "z": "e8850de7.ba355",
+        "name": "",
+        "splt": "\\n",
+        "spltType": "str",
+        "arraySplt": 1,
+        "arraySpltType": "len",
+        "stream": false,
+        "addname": "",
+        "x": 90,
+        "y": 100,
+        "wires": [
+            [
+                "f9aac830.fe9998"
+            ]
+        ]
+    },
+    {
+        "id": "3c0afec7.c81582",
+        "type": "http request",
+        "z": "e8850de7.ba355",
+        "name": "GET file",
+        "method": "GET",
+        "ret": "txt",
+        "paytoqs": "ignore",
+        "url": "https://{{gitChange.gitea_address}}/api/v1/repos/{{gitChange.repo_owner}}/{{gitChange.repo_name}}/raw/{{gitChange.file}}?ref={{gitChange.commit}}",
+        "persist": false,
+        "proxy": "",
+        "authType": "",
+        "x": 500,
+        "y": 100,
+        "wires": [
+            [
+                "584e97ab.23c708"
+            ]
+        ]
+    },
+    {
+        "id": "4e46e7ba.6d0d08",
+        "type": "join",
+        "z": "e8850de7.ba355",
+        "name": "",
+        "mode": "auto",
+        "build": "object",
+        "property": "payload",
+        "propertyType": "msg",
+        "key": "topic",
+        "joiner": "\\n",
+        "joinerType": "str",
+        "accumulate": true,
+        "timeout": "",
+        "count": "",
+        "reduceRight": false,
+        "reduceExp": "",
+        "reduceInit": "",
+        "reduceInitType": "",
+        "reduceFixup": "",
+        "x": 90,
+        "y": 300,
+        "wires": [
+            [
+                "de2a9935.ac8ad8"
+            ]
+        ]
+    },
+    {
+        "id": "5fceacad.3a71f4",
+        "type": "http response",
+        "z": "e8850de7.ba355",
+        "name": "",
+        "statusCode": "",
+        "headers": {},
+        "x": 470,
+        "y": 300,
+        "wires": []
+    },
+    {
+        "id": "584e97ab.23c708",
+        "type": "yaml",
+        "z": "e8850de7.ba355",
+        "property": "payload",
+        "name": "",
+        "x": 670,
+        "y": 100,
+        "wires": [
+            [
+                "a1322e20.5c63",
+                "f2739365.467c3"
+            ]
+        ]
+    },
+    {
+        "id": "f2739365.467c3",
+        "type": "debug",
+        "z": "e8850de7.ba355",
+        "name": "debug",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "{\t    \"bookmarks\": payload,\t    \"gitChange\": gitChange\t}",
+        "targetType": "jsonata",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 830,
+        "y": 100,
+        "wires": []
+    },
+    {
+        "id": "f9aac830.fe9998",
+        "type": "change",
+        "z": "e8850de7.ba355",
+        "name": "set msg.gitChange",
+        "rules": [
+            {
+                "t": "set",
+                "p": "gitChange",
+                "pt": "msg",
+                "to": "payload",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 290,
+        "y": 100,
+        "wires": [
+            [
+                "3c0afec7.c81582"
+            ]
+        ]
+    },
+    {
+        "id": "a1322e20.5c63",
+        "type": "function",
+        "z": "e8850de7.ba355",
+        "name": "placeholder for anything to really update bookmarks",
+        "func": "msg.payload = {\n    'result'   : 'OK',\n    'message'  : 'successfully updated',\n    'gitChange': msg.gitChange\n};\n\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 230,
+        "y": 200,
+        "wires": [
+            [
+                "4e46e7ba.6d0d08"
+            ]
+        ]
+    },
+    {
+        "id": "de2a9935.ac8ad8",
+        "type": "function",
+        "z": "e8850de7.ba355",
+        "name": "build response",
+        "func": "let success = 0;\nlet failed = 0;\n\nmsg.payload.forEach(item => {\n    if (item.result === 'OK') {\n        success++;\n    } else {\n        failed++;\n    }\n});\n\nlet payload = {\n    'message': `processed ${msg.payload.length} changes`,\n    'success': success,\n    'failed' : failed,\n    'details': msg.payload\n};\n\nmsg.payload = payload;\n\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 280,
+        "y": 300,
+        "wires": [
+            [
+                "5fceacad.3a71f4"
+            ]
+        ]
+    },
+    {
+        "id": "fd6004a5.dc17d8",
+        "type": "function",
+        "z": "e8850de7.ba355",
+        "name": "nothing changed",
+        "func": "let payload = {\n    'result' : `nothing changed`,\n    'success': 0,\n    'failed' : 0,\n    'details': []\n};\n\nmsg.payload = payload;\n\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 770,
+        "y": 40,
+        "wires": [
+            [
+                "5b6a46a6.9a4c58"
+            ]
+        ]
+    }
+]
