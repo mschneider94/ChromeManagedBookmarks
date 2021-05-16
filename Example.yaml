@@ -1,0 +1,11 @@
+- toplevel_name: My managed bookmarks folder
+- url: google.com
+  name: Google
+- url: youtube.com
+  name: Youtube
+- name: Chrome links
+  children:
+  - url: chromium.org
+    name: Chromium
+  - url: dev.chromium.org
+    name: Chromium Developers
