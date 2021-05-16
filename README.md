@@ -38,7 +38,7 @@ ConvertFrom-Yaml $(Invoke-WebRequest -URI "https://raw.githubusercontent.com/msc
 
 ## Automation
 
-If you store your YAML-file inside a Git-Repo using your own (local) Instance of [Gitea](gitea.io), have a look at the [Node-RED flow](Node-RED.json) I've created to illustrate that possibility.
+If you store your YAML-file inside a Git-Repo using your own (local) Instance of [Gitea](https://gitea.io/), have a look at the [Node-RED flow](Node-RED.json) I've created to illustrate that possibility.
 
 In there you'll just swap out the _"placeholder for anything to really update bookmarks"_ Node with something to actually update the GPO (there PowerShell-Nodes for Node-RED)...  
 ...create a webhook in your Gitea-Repository for _Push_-Events to that Node-RED flow...
